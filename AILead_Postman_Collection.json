@@ -1,0 +1,166 @@
+{
+  "info": {
+    "name": "AILead API Collection",
+    "description": "Complete API collection for AILead application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Leads",
+      "item": [
+        {
+          "name": "Create Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"company\": \"Tech Corp\",\n  \"email\": \"john@techcorp.com\",\n  \"phone\": \"+1234567890\",\n  \"country\": \"USA\",\n  \"city\": \"New York\",\n  \"source\": \"Website\",\n  \"status\": \"NEW\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/leads/create",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get All Leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/leads/all",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "all"]
+            }
+          }
+        },
+        {
+          "name": "Get Leads with Filters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/leads/list?status=NEW&source=Website",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "list"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "NEW"
+                },
+                {
+                  "key": "source",
+                  "value": "Website"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Leads by Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/leads/search?name=john",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "search"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "john"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Leads by Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/leads/filter?status=NEW",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "filter"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "NEW"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Lead",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/leads/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Lead",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"company\": \"Tech Corp\",\n  \"email\": \"john.updated@techcorp.com\",\n  \"phone\": \"+1234567890\",\n  \"country\": \"USA\",\n  \"city\": \"New York\",\n  \"source\": \"Website\",\n  \"status\": \"CONTACTED\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/leads/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Lead",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/leads/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "leads", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
