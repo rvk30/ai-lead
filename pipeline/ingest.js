@@ -3,6 +3,7 @@ const path = require('path');
 const csv = require('csv-parser');
 const XLSX = require('xlsx');
 const { Pool } = require('pg');
+const { execSync } = require('child_process');
 
 const pool = new Pool({
     host: 'localhost',
@@ -12,9 +13,7 @@ const pool = new Pool({
     port: 5432
 });
 
-// Column mapping — scrapping ke raw names → standard names
 const COLUMN_MAP = {
-    // Aaron/Punam format
     'Business Name': 'business_name',
     'Phone Number': 'phone',
     'Email': 'email',
@@ -26,8 +25,6 @@ const COLUMN_MAP = {
     'Google Ratings': 'google_rating',
     'Remarks': 'remarks',
     'Source_File': 'source_file',
-
-    // Kareena/Naveen format
     'qBF1Pd': 'business_name',
     'UsdlK': 'phone',
     'doJOZc': 'email',
@@ -47,21 +44,37 @@ function mapRow(row) {
     return mapped;
 }
 
-async function insertRow(row, sourceFile, rowNum) {
-    const mapped = mapRow(row);
-    if (!mapped.business_name) return false;
+async function bulkInsert(rows, sourceFile) {
+    if (rows.length === 0) return 0;
 
-    const rawPayload = JSON.stringify(mapped);
-    const sourceRecordId = `${path.basename(sourceFile)}_row_${rowNum}`;
+    const params = [];
+    const values = [];
+    let count = 0;
+
+    rows.forEach((row, i) => {
+        const mapped = mapRow(row);
+        if (!mapped.business_name) return;
+
+        const base = count * 2;
+        params.push(`($${base + 1}, $${base + 2})`);
+        values.push(
+            `${path.basename(sourceFile)}_row_${i + 2}`,
+            JSON.stringify(mapped)
+        );
+        count++;
+    });
+
+    if (count === 0) return 0;
 
     await pool.query(
         `INSERT INTO lead_intelligence.raw_records 
         (source_record_id, raw_payload) 
-        VALUES ($1, $2)
+        VALUES ${params.join(',')}
         ON CONFLICT (source_record_id) DO NOTHING`,
-        [sourceRecordId, rawPayload]
+        values
     );
-    return true;
+
+    return count;
 }
 
 async function processCSV(filePath) {
@@ -71,12 +84,7 @@ async function processCSV(filePath) {
             .pipe(csv())
             .on('data', (row) => rows.push(row))
             .on('end', async () => {
-                let count = 0;
-                for (let i = 0; i < rows.length; i++) {
-                    const inserted = await insertRow(rows[i], filePath, i + 2);
-                    if (inserted) count++;
-                    if (count % 100 === 0 && count > 0) console.log(`  ${count} rows inserted...`);
-                }
+                const count = await bulkInsert(rows, filePath);
                 resolve(count);
             })
             .on('error', reject);
@@ -92,12 +100,7 @@ async function processXLSX(filePath) {
         const rows = XLSX.utils.sheet_to_json(ws);
         console.log(`  Sheet: ${sheetName} — ${rows.length} rows`);
 
-        let count = 0;
-        for (let i = 0; i < rows.length; i++) {
-            const inserted = await insertRow(rows[i], `${filePath}_${sheetName}`, i + 2);
-            if (inserted) count++;
-            if (count % 100 === 0 && count > 0) console.log(`  ${count} rows inserted...`);
-        }
+        const count = await bulkInsert(rows, `${filePath}_${sheetName}`);
         totalCount += count;
     }
     return totalCount;
@@ -144,7 +147,12 @@ async function main() {
     }
 
     await pool.end();
-    console.log('\nAll done!');
+
+    // Auto trigger staging pipeline
+    console.log('\nAuto-triggering staging pipeline...');
+    execSync('node /home/ubuntu/pipeline/raw_to_staging.js', { stdio: 'inherit' });
+
+    console.log('\nAll done! Raw → Staging complete!');
 }
 
 main().catch(console.error);

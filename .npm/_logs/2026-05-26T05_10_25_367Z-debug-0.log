@@ -1,0 +1,284 @@
+0 verbose cli /usr/bin/node /usr/bin/npm
+1 info using npm@10.8.2
+2 info using node@v20.20.2
+3 silly config load:file:/usr/lib/node_modules/npm/npmrc
+4 silly config load:file:/home/ubuntu/worker/.npmrc
+5 silly config load:file:/home/ubuntu/.npmrc
+6 silly config load:file:/usr/etc/npmrc
+7 verbose title npm install bullmq
+8 verbose argv "install" "bullmq"
+9 verbose logfile logs-max:10 dir:/home/ubuntu/.npm/_logs/2026-05-26T05_10_25_367Z-
+10 verbose logfile /home/ubuntu/.npm/_logs/2026-05-26T05_10_25_367Z-debug-0.log
+11 silly packumentCache heap:489160704 maxSize:122290176 maxEntrySize:61145088
+12 silly logfile done cleaning log files
+13 silly idealTree buildDeps
+14 silly fetch manifest bullmq@*
+15 silly packumentCache full:https://registry.npmjs.org/bullmq cache-miss
+16 http fetch GET 200 https://registry.npmjs.org/bullmq 235ms (cache miss)
+17 silly packumentCache full:https://registry.npmjs.org/bullmq set size:undefined disposed:false
+18 silly fetch manifest redis@>=5.0.0
+19 silly packumentCache full:https://registry.npmjs.org/redis cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/redis 37ms (cache miss)
+21 silly packumentCache full:https://registry.npmjs.org/redis set size:undefined disposed:false
+22 silly placeDep ROOT bullmq@5.77.3 OK for: worker@1.0.0 want: *
+23 silly fetch manifest cron-parser@4.9.0
+24 silly packumentCache full:https://registry.npmjs.org/cron-parser cache-miss
+25 http fetch GET 200 https://registry.npmjs.org/cron-parser 28ms (cache miss)
+26 silly packumentCache full:https://registry.npmjs.org/cron-parser set size:undefined disposed:false
+27 silly fetch manifest ioredis@5.10.1
+28 silly packumentCache full:https://registry.npmjs.org/ioredis cache-miss
+29 http fetch GET 200 https://registry.npmjs.org/ioredis 47ms (cache miss)
+30 silly packumentCache full:https://registry.npmjs.org/ioredis set size:undefined disposed:false
+31 silly fetch manifest msgpackr@2.0.1
+32 silly packumentCache full:https://registry.npmjs.org/msgpackr cache-miss
+33 http fetch GET 200 https://registry.npmjs.org/msgpackr 42ms (cache miss)
+34 silly packumentCache full:https://registry.npmjs.org/msgpackr set size:undefined disposed:false
+35 silly fetch manifest node-abort-controller@3.1.1
+36 silly packumentCache full:https://registry.npmjs.org/node-abort-controller cache-miss
+37 http fetch GET 200 https://registry.npmjs.org/node-abort-controller 25ms (cache miss)
+38 silly packumentCache full:https://registry.npmjs.org/node-abort-controller set size:undefined disposed:false
+39 silly fetch manifest semver@7.8.0
+40 silly packumentCache full:https://registry.npmjs.org/semver cache-miss
+41 http fetch GET 200 https://registry.npmjs.org/semver 27ms (cache miss)
+42 silly packumentCache full:https://registry.npmjs.org/semver set size:undefined disposed:false
+43 silly fetch manifest tslib@2.8.1
+44 silly packumentCache full:https://registry.npmjs.org/tslib cache-miss
+45 http fetch GET 200 https://registry.npmjs.org/tslib 22ms (cache miss)
+46 silly packumentCache full:https://registry.npmjs.org/tslib set size:undefined disposed:false
+47 silly placeDep ROOT cron-parser@4.9.0 OK for: bullmq@5.77.3 want: 4.9.0
+48 silly placeDep ROOT ioredis@5.10.1 OK for: bullmq@5.77.3 want: 5.10.1
+49 silly placeDep ROOT msgpackr@2.0.1 OK for: bullmq@5.77.3 want: 2.0.1
+50 silly placeDep ROOT node-abort-controller@3.1.1 OK for: bullmq@5.77.3 want: 3.1.1
+51 silly placeDep ROOT semver@7.8.0 OK for: bullmq@5.77.3 want: 7.8.0
+52 silly placeDep ROOT tslib@2.8.1 OK for: bullmq@5.77.3 want: 2.8.1
+53 silly fetch manifest luxon@^3.2.1
+54 silly packumentCache full:https://registry.npmjs.org/luxon cache-miss
+55 http fetch GET 200 https://registry.npmjs.org/luxon 97ms (cache miss)
+56 silly packumentCache full:https://registry.npmjs.org/luxon set size:undefined disposed:false
+57 silly fetch manifest @ioredis/commands@1.5.1
+58 silly packumentCache full:https://registry.npmjs.org/@ioredis%2fcommands cache-miss
+59 http fetch GET 200 https://registry.npmjs.org/@ioredis%2fcommands 31ms (cache miss)
+60 silly packumentCache full:https://registry.npmjs.org/@ioredis%2fcommands set size:undefined disposed:false
+61 silly fetch manifest cluster-key-slot@^1.1.0
+62 silly packumentCache full:https://registry.npmjs.org/cluster-key-slot cache-miss
+63 http fetch GET 200 https://registry.npmjs.org/cluster-key-slot 21ms (cache miss)
+64 silly packumentCache full:https://registry.npmjs.org/cluster-key-slot set size:undefined disposed:false
+65 silly fetch manifest debug@^4.3.4
+66 silly packumentCache full:https://registry.npmjs.org/debug cache-miss
+67 http fetch GET 200 https://registry.npmjs.org/debug 26ms (cache miss)
+68 silly packumentCache full:https://registry.npmjs.org/debug set size:undefined disposed:false
+69 silly fetch manifest denque@^2.1.0
+70 silly packumentCache full:https://registry.npmjs.org/denque cache-miss
+71 http fetch GET 200 https://registry.npmjs.org/denque 20ms (cache miss)
+72 silly packumentCache full:https://registry.npmjs.org/denque set size:undefined disposed:false
+73 silly fetch manifest lodash.defaults@^4.2.0
+74 silly packumentCache full:https://registry.npmjs.org/lodash.defaults cache-miss
+75 http fetch GET 200 https://registry.npmjs.org/lodash.defaults 21ms (cache miss)
+76 silly packumentCache full:https://registry.npmjs.org/lodash.defaults set size:undefined disposed:false
+77 silly fetch manifest lodash.isarguments@^3.1.0
+78 silly packumentCache full:https://registry.npmjs.org/lodash.isarguments cache-miss
+79 http fetch GET 200 https://registry.npmjs.org/lodash.isarguments 17ms (cache miss)
+80 silly packumentCache full:https://registry.npmjs.org/lodash.isarguments set size:undefined disposed:false
+81 silly fetch manifest redis-errors@^1.2.0
+82 silly packumentCache full:https://registry.npmjs.org/redis-errors cache-miss
+83 http fetch GET 200 https://registry.npmjs.org/redis-errors 19ms (cache miss)
+84 silly packumentCache full:https://registry.npmjs.org/redis-errors set size:undefined disposed:false
+85 silly fetch manifest redis-parser@^3.0.0
+86 silly packumentCache full:https://registry.npmjs.org/redis-parser cache-miss
+87 http fetch GET 200 https://registry.npmjs.org/redis-parser 19ms (cache miss)
+88 silly packumentCache full:https://registry.npmjs.org/redis-parser set size:undefined disposed:false
+89 silly fetch manifest standard-as-callback@^2.1.0
+90 silly packumentCache full:https://registry.npmjs.org/standard-as-callback cache-miss
+91 http fetch GET 200 https://registry.npmjs.org/standard-as-callback 19ms (cache miss)
+92 silly packumentCache full:https://registry.npmjs.org/standard-as-callback set size:undefined disposed:false
+93 silly fetch manifest msgpackr-extract@^3.0.2
+94 silly packumentCache full:https://registry.npmjs.org/msgpackr-extract cache-miss
+95 http fetch GET 200 https://registry.npmjs.org/msgpackr-extract 23ms (cache miss)
+96 silly packumentCache full:https://registry.npmjs.org/msgpackr-extract set size:undefined disposed:false
+97 silly placeDep ROOT luxon@3.7.2 OK for: cron-parser@4.9.0 want: ^3.2.1
+98 silly placeDep ROOT @ioredis/commands@1.5.1 OK for: ioredis@5.10.1 want: 1.5.1
+99 silly placeDep ROOT cluster-key-slot@1.1.2 OK for: ioredis@5.10.1 want: ^1.1.0
+100 silly placeDep ROOT debug@4.4.3 OK for: ioredis@5.10.1 want: ^4.3.4
+101 silly placeDep ROOT denque@2.1.0 OK for: ioredis@5.10.1 want: ^2.1.0
+102 silly placeDep ROOT lodash.defaults@4.2.0 OK for: ioredis@5.10.1 want: ^4.2.0
+103 silly placeDep ROOT lodash.isarguments@3.1.0 OK for: ioredis@5.10.1 want: ^3.1.0
+104 silly placeDep ROOT redis-errors@1.2.0 OK for: ioredis@5.10.1 want: ^1.2.0
+105 silly placeDep ROOT redis-parser@3.0.0 OK for: ioredis@5.10.1 want: ^3.0.0
+106 silly placeDep ROOT standard-as-callback@2.1.0 OK for: ioredis@5.10.1 want: ^2.1.0
+107 silly fetch manifest ms@^2.1.3
+108 silly packumentCache full:https://registry.npmjs.org/ms cache-miss
+109 http fetch GET 200 https://registry.npmjs.org/ms 29ms (cache miss)
+110 silly packumentCache full:https://registry.npmjs.org/ms set size:undefined disposed:false
+111 silly placeDep ROOT ms@2.1.3 OK for: debug@4.4.3 want: ^2.1.3
+112 silly placeDep ROOT msgpackr-extract@3.0.4 OK for: msgpackr@2.0.1 want: ^3.0.2
+113 silly fetch manifest node-gyp-build-optional-packages@5.2.2
+114 silly packumentCache full:https://registry.npmjs.org/node-gyp-build-optional-packages cache-miss
+115 http fetch GET 200 https://registry.npmjs.org/node-gyp-build-optional-packages 19ms (cache miss)
+116 silly packumentCache full:https://registry.npmjs.org/node-gyp-build-optional-packages set size:undefined disposed:false
+117 silly fetch manifest @msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4
+118 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-darwin-arm64 cache-miss
+119 http fetch GET 200 https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-darwin-arm64 32ms (cache miss)
+120 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-darwin-arm64 set size:undefined disposed:false
+121 silly fetch manifest @msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4
+122 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-darwin-x64 cache-miss
+123 http fetch GET 200 https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-darwin-x64 33ms (cache miss)
+124 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-darwin-x64 set size:undefined disposed:false
+125 silly fetch manifest @msgpackr-extract/msgpackr-extract-linux-arm@3.0.4
+126 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-arm cache-miss
+127 http fetch GET 200 https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-arm 34ms (cache miss)
+128 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-arm set size:undefined disposed:false
+129 silly fetch manifest @msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4
+130 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-arm64 cache-miss
+131 http fetch GET 200 https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-arm64 32ms (cache miss)
+132 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-arm64 set size:undefined disposed:false
+133 silly fetch manifest @msgpackr-extract/msgpackr-extract-linux-x64@3.0.4
+134 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-x64 cache-miss
+135 http fetch GET 200 https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-x64 30ms (cache miss)
+136 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-linux-x64 set size:undefined disposed:false
+137 silly fetch manifest @msgpackr-extract/msgpackr-extract-win32-x64@3.0.4
+138 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-win32-x64 cache-miss
+139 http fetch GET 200 https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-win32-x64 36ms (cache miss)
+140 silly packumentCache full:https://registry.npmjs.org/@msgpackr-extract%2fmsgpackr-extract-win32-x64 set size:undefined disposed:false
+141 silly placeDep ROOT @msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4 OK for: msgpackr-extract@3.0.4 want: 3.0.4
+142 silly placeDep ROOT @msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4 OK for: msgpackr-extract@3.0.4 want: 3.0.4
+143 silly placeDep ROOT @msgpackr-extract/msgpackr-extract-linux-arm@3.0.4 OK for: msgpackr-extract@3.0.4 want: 3.0.4
+144 silly placeDep ROOT @msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4 OK for: msgpackr-extract@3.0.4 want: 3.0.4
+145 silly placeDep ROOT @msgpackr-extract/msgpackr-extract-linux-x64@3.0.4 OK for: msgpackr-extract@3.0.4 want: 3.0.4
+146 silly placeDep ROOT @msgpackr-extract/msgpackr-extract-win32-x64@3.0.4 OK for: msgpackr-extract@3.0.4 want: 3.0.4
+147 silly placeDep ROOT node-gyp-build-optional-packages@5.2.2 OK for: msgpackr-extract@3.0.4 want: 5.2.2
+148 silly fetch manifest detect-libc@^2.0.1
+149 silly packumentCache full:https://registry.npmjs.org/detect-libc cache-miss
+150 http fetch GET 200 https://registry.npmjs.org/detect-libc 17ms (cache miss)
+151 silly packumentCache full:https://registry.npmjs.org/detect-libc set size:undefined disposed:false
+152 silly placeDep ROOT detect-libc@2.1.2 OK for: node-gyp-build-optional-packages@5.2.2 want: ^2.0.1
+153 silly reify moves {}
+154 silly audit bulk request {
+154 silly audit   bullmq: [ '5.77.3' ],
+154 silly audit   'cron-parser': [ '4.9.0' ],
+154 silly audit   ioredis: [ '5.10.1' ],
+154 silly audit   msgpackr: [ '2.0.1' ],
+154 silly audit   'node-abort-controller': [ '3.1.1' ],
+154 silly audit   semver: [ '7.8.0' ],
+154 silly audit   tslib: [ '2.8.1' ],
+154 silly audit   luxon: [ '3.7.2' ],
+154 silly audit   '@ioredis/commands': [ '1.5.1' ],
+154 silly audit   'cluster-key-slot': [ '1.1.2' ],
+154 silly audit   debug: [ '4.4.3' ],
+154 silly audit   denque: [ '2.1.0' ],
+154 silly audit   'lodash.defaults': [ '4.2.0' ],
+154 silly audit   'lodash.isarguments': [ '3.1.0' ],
+154 silly audit   'redis-errors': [ '1.2.0' ],
+154 silly audit   'redis-parser': [ '3.0.0' ],
+154 silly audit   'standard-as-callback': [ '2.1.0' ],
+154 silly audit   ms: [ '2.1.3' ],
+154 silly audit   'msgpackr-extract': [ '3.0.4' ],
+154 silly audit   '@msgpackr-extract/msgpackr-extract-darwin-arm64': [ '3.0.4' ],
+154 silly audit   '@msgpackr-extract/msgpackr-extract-darwin-x64': [ '3.0.4' ],
+154 silly audit   '@msgpackr-extract/msgpackr-extract-linux-arm': [ '3.0.4' ],
+154 silly audit   '@msgpackr-extract/msgpackr-extract-linux-arm64': [ '3.0.4' ],
+154 silly audit   '@msgpackr-extract/msgpackr-extract-linux-x64': [ '3.0.4' ],
+154 silly audit   '@msgpackr-extract/msgpackr-extract-win32-x64': [ '3.0.4' ],
+154 silly audit   'node-gyp-build-optional-packages': [ '5.2.2' ],
+154 silly audit   'detect-libc': [ '2.1.2' ]
+154 silly audit }
+155 verbose reify failed optional dependency /home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-win32-x64
+156 silly reify mark deleted [
+156 silly reify   '/home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-win32-x64'
+156 silly reify ]
+157 verbose reify failed optional dependency /home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-linux-arm64
+158 silly reify mark deleted [
+158 silly reify   '/home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-linux-arm64'
+158 silly reify ]
+159 verbose reify failed optional dependency /home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-linux-arm
+160 silly reify mark deleted [
+160 silly reify   '/home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-linux-arm'
+160 silly reify ]
+161 verbose reify failed optional dependency /home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-darwin-x64
+162 silly reify mark deleted [
+162 silly reify   '/home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-darwin-x64'
+162 silly reify ]
+163 verbose reify failed optional dependency /home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-darwin-arm64
+164 silly reify mark deleted [
+164 silly reify   '/home/ubuntu/worker/node_modules/@msgpackr-extract/msgpackr-extract-darwin-arm64'
+164 silly reify ]
+165 silly tarball no local data for detect-libc@https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz. Extracting by manifest.
+166 silly tarball no local data for node-gyp-build-optional-packages@https://registry.npmjs.org/node-gyp-build-optional-packages/-/node-gyp-build-optional-packages-5.2.2.tgz. Extracting by manifest.
+167 silly tarball no local data for @msgpackr-extract/msgpackr-extract-linux-x64@https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-linux-x64/-/msgpackr-extract-linux-x64-3.0.4.tgz. Extracting by manifest.
+168 silly tarball no local data for msgpackr-extract@https://registry.npmjs.org/msgpackr-extract/-/msgpackr-extract-3.0.4.tgz. Extracting by manifest.
+169 silly tarball no local data for ms@https://registry.npmjs.org/ms/-/ms-2.1.3.tgz. Extracting by manifest.
+170 silly tarball no local data for standard-as-callback@https://registry.npmjs.org/standard-as-callback/-/standard-as-callback-2.1.0.tgz. Extracting by manifest.
+171 silly tarball no local data for redis-parser@https://registry.npmjs.org/redis-parser/-/redis-parser-3.0.0.tgz. Extracting by manifest.
+172 silly tarball no local data for redis-errors@https://registry.npmjs.org/redis-errors/-/redis-errors-1.2.0.tgz. Extracting by manifest.
+173 silly tarball no local data for lodash.isarguments@https://registry.npmjs.org/lodash.isarguments/-/lodash.isarguments-3.1.0.tgz. Extracting by manifest.
+174 silly tarball no local data for lodash.defaults@https://registry.npmjs.org/lodash.defaults/-/lodash.defaults-4.2.0.tgz. Extracting by manifest.
+175 silly tarball no local data for denque@https://registry.npmjs.org/denque/-/denque-2.1.0.tgz. Extracting by manifest.
+176 silly tarball no local data for debug@https://registry.npmjs.org/debug/-/debug-4.4.3.tgz. Extracting by manifest.
+177 silly tarball no local data for cluster-key-slot@https://registry.npmjs.org/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz. Extracting by manifest.
+178 silly tarball no local data for @ioredis/commands@https://registry.npmjs.org/@ioredis/commands/-/commands-1.5.1.tgz. Extracting by manifest.
+179 silly tarball no local data for luxon@https://registry.npmjs.org/luxon/-/luxon-3.7.2.tgz. Extracting by manifest.
+180 silly tarball no local data for tslib@https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz. Extracting by manifest.
+181 silly tarball no local data for semver@https://registry.npmjs.org/semver/-/semver-7.8.0.tgz. Extracting by manifest.
+182 silly tarball no local data for node-abort-controller@https://registry.npmjs.org/node-abort-controller/-/node-abort-controller-3.1.1.tgz. Extracting by manifest.
+183 silly tarball no local data for msgpackr@https://registry.npmjs.org/msgpackr/-/msgpackr-2.0.1.tgz. Extracting by manifest.
+184 silly tarball no local data for ioredis@https://registry.npmjs.org/ioredis/-/ioredis-5.10.1.tgz. Extracting by manifest.
+185 silly tarball no local data for cron-parser@https://registry.npmjs.org/cron-parser/-/cron-parser-4.9.0.tgz. Extracting by manifest.
+186 silly tarball no local data for bullmq@https://registry.npmjs.org/bullmq/-/bullmq-5.77.3.tgz. Extracting by manifest.
+187 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 170ms
+188 silly audit report {}
+189 http fetch GET 200 https://registry.npmjs.org/ms/-/ms-2.1.3.tgz 318ms (cache miss)
+190 http fetch GET 200 https://registry.npmjs.org/redis-errors/-/redis-errors-1.2.0.tgz 317ms (cache miss)
+191 http fetch GET 200 https://registry.npmjs.org/lodash.isarguments/-/lodash.isarguments-3.1.0.tgz 317ms (cache miss)
+192 http fetch GET 200 https://registry.npmjs.org/standard-as-callback/-/standard-as-callback-2.1.0.tgz 322ms (cache miss)
+193 http fetch GET 200 https://registry.npmjs.org/lodash.defaults/-/lodash.defaults-4.2.0.tgz 318ms (cache miss)
+194 http fetch GET 200 https://registry.npmjs.org/msgpackr-extract/-/msgpackr-extract-3.0.4.tgz 325ms (cache miss)
+195 http fetch GET 200 https://registry.npmjs.org/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz 319ms (cache miss)
+196 http fetch GET 200 https://registry.npmjs.org/node-gyp-build-optional-packages/-/node-gyp-build-optional-packages-5.2.2.tgz 331ms (cache miss)
+197 http fetch GET 200 https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz 336ms (cache miss)
+198 http fetch GET 200 https://registry.npmjs.org/denque/-/denque-2.1.0.tgz 329ms (cache miss)
+199 http fetch GET 200 https://registry.npmjs.org/@ioredis/commands/-/commands-1.5.1.tgz 327ms (cache miss)
+200 http fetch GET 200 https://registry.npmjs.org/redis-parser/-/redis-parser-3.0.0.tgz 334ms (cache miss)
+201 http fetch GET 200 https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-linux-x64/-/msgpackr-extract-linux-x64-3.0.4.tgz 340ms (cache miss)
+202 http fetch GET 200 https://registry.npmjs.org/node-abort-controller/-/node-abort-controller-3.1.1.tgz 327ms (cache miss)
+203 http fetch GET 200 https://registry.npmjs.org/debug/-/debug-4.4.3.tgz 343ms (cache miss)
+204 http fetch GET 200 https://registry.npmjs.org/cron-parser/-/cron-parser-4.9.0.tgz 337ms (cache miss)
+205 http fetch GET 200 https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz 352ms (cache miss)
+206 http fetch GET 200 https://registry.npmjs.org/semver/-/semver-7.8.0.tgz 393ms (cache miss)
+207 http fetch GET 200 https://registry.npmjs.org/ioredis/-/ioredis-5.10.1.tgz 456ms (cache miss)
+208 http fetch GET 200 https://registry.npmjs.org/msgpackr/-/msgpackr-2.0.1.tgz 465ms (cache miss)
+209 http fetch GET 200 https://registry.npmjs.org/luxon/-/luxon-3.7.2.tgz 542ms (cache miss)
+210 http fetch GET 200 https://registry.npmjs.org/bullmq/-/bullmq-5.77.3.tgz 678ms (cache miss)
+211 info run msgpackr-extract@3.0.4 install node_modules/msgpackr-extract node-gyp-build-optional-packages
+212 info run msgpackr-extract@3.0.4 install { code: 0, signal: null }
+213 silly ADD node_modules/detect-libc
+214 silly ADD node_modules/node-gyp-build-optional-packages
+215 silly ADD
+216 silly ADD node_modules/@msgpackr-extract/msgpackr-extract-linux-x64
+217 silly ADD
+218 silly ADD
+219 silly ADD
+220 silly ADD
+221 silly ADD node_modules/msgpackr-extract
+222 silly ADD node_modules/ms
+223 silly ADD node_modules/standard-as-callback
+224 silly ADD node_modules/redis-parser
+225 silly ADD node_modules/redis-errors
+226 silly ADD node_modules/lodash.isarguments
+227 silly ADD node_modules/lodash.defaults
+228 silly ADD node_modules/denque
+229 silly ADD node_modules/debug
+230 silly ADD node_modules/cluster-key-slot
+231 silly ADD node_modules/@ioredis/commands
+232 silly ADD node_modules/luxon
+233 silly ADD node_modules/tslib
+234 silly ADD node_modules/semver
+235 silly ADD node_modules/node-abort-controller
+236 silly ADD node_modules/msgpackr
+237 silly ADD node_modules/ioredis
+238 silly ADD node_modules/cron-parser
+239 silly ADD node_modules/bullmq
+240 verbose cwd /home/ubuntu/worker
+241 verbose os Linux 7.0.0-1004-aws
+242 verbose node v20.20.2
+243 verbose npm  v10.8.2
+244 verbose exit 0
+245 info ok
