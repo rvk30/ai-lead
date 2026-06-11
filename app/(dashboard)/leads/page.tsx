@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface Company {
   id: number;
@@ -25,26 +26,129 @@ const qualityBadge = (score: number) => {
 };
 
 export default function LeadsPage() {
+  const searchParams = useSearchParams();
   const [companies, setCompanies]   = useState<Company[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [loading, setLoading]       = useState(true);
   const [deleting, setDeleting]     = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Filter states
+  const [filters, setFilters] = useState({
+    search: '',
+    state: '',
+    category: '',
+    quality: '',
+    hasEmail: '',
+    source: '',
+  });
+
+  // Unique values for filters
+  const [states, setStates] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [sources, setSources] = useState<string[]>([]);
+
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    // Apply filters whenever companies or filters change
+    applyFilters();
+  }, [companies, filters]);
+
+  useEffect(() => {
+    // Apply source filter from URL if present
+    const sourceFromUrl = searchParams.get('source');
+    if (sourceFromUrl) {
+      setFilters(prev => ({ ...prev, source: sourceFromUrl }));
+    }
+  }, [searchParams]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const res  = await fetch('/api/leads/all');
       const data = await res.json();
-      if (data.success) setCompanies(data.data);
+      if (data.success) {
+        setCompanies(data.data);
+        setFilteredCompanies(data.data);
+        
+        // Extract unique values
+        const uniqueStates = [...new Set(data.data.map((c: Company) => c.state).filter(Boolean))];
+        const uniqueCategories = [...new Set(data.data.map((c: Company) => c.business_category).filter(Boolean))];
+        const uniqueSources = [...new Set(data.data.map((c: Company) => c.source_file).filter(Boolean))];
+        
+        console.log('All sources from data:', data.data.map((c: Company) => c.source_file));
+        console.log('Unique sources:', uniqueSources);
+        
+        setStates(uniqueStates.sort());
+        setCategories(uniqueCategories.sort());
+        setSources(uniqueSources.sort());
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
+  const applyFilters = () => {
+    let filtered = [...companies];
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.company_name?.toLowerCase().includes(searchLower) ||
+        c.email?.toLowerCase().includes(searchLower) ||
+        c.mobile_number?.includes(searchLower)
+      );
+    }
+
+    // State filter
+    if (filters.state) {
+      filtered = filtered.filter(c => c.state === filters.state);
+    }
+
+    // Category filter
+    if (filters.category) {
+      filtered = filtered.filter(c => c.business_category === filters.category);
+    }
+
+    // Quality filter
+    if (filters.quality) {
+      const minQuality = parseInt(filters.quality);
+      filtered = filtered.filter(c => c.quality_score >= minQuality);
+    }
+
+    // Email filter
+    if (filters.hasEmail === 'yes') {
+      filtered = filtered.filter(c => c.email && c.email.trim() !== '');
+    } else if (filters.hasEmail === 'no') {
+      filtered = filtered.filter(c => !c.email || c.email.trim() === '');
+    }
+
+    // Source filter
+    if (filters.source) {
+      filtered = filtered.filter(c => c.source_file === filters.source);
+    }
+
+    setFilteredCompanies(filtered);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      search: '',
+      state: '',
+      category: '',
+      quality: '',
+      hasEmail: '',
+      source: '',
+    });
+  };
+
+  const activeFiltersCount = Object.values(filters).filter(v => v !== '').length;
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this company?')) return;
@@ -67,14 +171,72 @@ export default function LeadsPage() {
   };
 
   // Pagination calculations
-  const totalPages = Math.ceil(companies.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentCompanies = companies.slice(startIndex, endIndex);
+  const currentCompanies = filteredCompanies.slice(startIndex, endIndex);
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleExport = () => {
+    // Use filtered companies for export
+    const dataToExport = filteredCompanies;
+
+    if (dataToExport.length === 0) {
+      alert('No data to export!');
+      return;
+    }
+
+    // Create CSV content
+    const headers = [
+      'ID',
+      'Company Name',
+      'Mobile Number',
+      'Email',
+      'Website URL',
+      'Address',
+      'State',
+      'Business Category',
+      'Quality Score',
+      'Google Rating',
+      'Source File',
+      'Created At'
+    ];
+
+    const csvRows = [
+      headers.join(','), // Header row
+      ...dataToExport.map(company => [
+        company.id,
+        `"${(company.company_name || '').replace(/"/g, '""')}"`,
+        `"${company.mobile_number || ''}"`,
+        `"${(company.email || '').replace(/"/g, '""')}"`,
+        `"${(company.website_url || '').replace(/"/g, '""')}"`,
+        `"${(company.address || '').replace(/"/g, '""')}"`,
+        `"${(company.state || '').replace(/"/g, '""')}"`,
+        `"${(company.business_category || '').replace(/"/g, '""')}"`,
+        company.quality_score ?? 0,
+        company.google_rating ?? '',
+        `"${(company.source_file || '').replace(/"/g, '""')}"`,
+        `"${new Date(company.created_at).toLocaleString()}"`
+      ].join(','))
+    ];
+
+    const csvContent = csvRows.join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leads_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -84,17 +246,130 @@ export default function LeadsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Companies</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Showing {startIndex + 1}-{Math.min(endIndex, companies.length)} of {companies.length} total records
+            Showing {startIndex + 1}-{Math.min(endIndex, filteredCompanies.length)} of {filteredCompanies.length} filtered ({companies.length} total)
           </p>
         </div>
-        <Link href="/upload"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-          </svg>
-          Upload File
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            disabled={loading || filteredCompanies.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export ({filteredCompanies.length})
+          </button>
+          <Link href="/upload"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Upload File
+          </Link>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+          {/* Search */}
+          <div>
+            <input
+              type="text"
+              placeholder="Search name, email, mobile..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+          </div>
+
+          {/* State */}
+          <div>
+            <select
+              value={filters.state}
+              onChange={(e) => setFilters({ ...filters, state: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">All States</option>
+              {states.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Category */}
+          <div>
+            <select
+              value={filters.category}
+              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Quality */}
+          <div>
+            <select
+              value={filters.quality}
+              onChange={(e) => setFilters({ ...filters, quality: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">All Quality</option>
+              <option value="80">80%+ Quality</option>
+              <option value="60">60%+ Quality</option>
+              <option value="40">40%+ Quality</option>
+            </select>
+          </div>
+
+          {/* Email Status */}
+          <div>
+            <select
+              value={filters.hasEmail}
+              onChange={(e) => setFilters({ ...filters, hasEmail: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">Email: All</option>
+              <option value="yes">Has Email</option>
+              <option value="no">No Email</option>
+            </select>
+          </div>
+
+          {/* Source */}
+          <div>
+            <select
+              value={filters.source}
+              onChange={(e) => setFilters({ ...filters, source: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">All Sources</option>
+              {sources.map(source => (
+                <option key={source} value={source}>{source}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Clear Filters */}
+        {activeFiltersCount > 0 && (
+          <div className="mt-3 flex items-center justify-between pt-3 border-t border-gray-200">
+            <span className="text-sm text-gray-600">
+              {activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} active
+            </span>
+            <button
+              onClick={handleClearFilters}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -109,6 +384,13 @@ export default function LeadsPage() {
             <Link href="/upload" className="text-sm text-blue-600 hover:underline">
               Upload your first file →
             </Link>
+          </div>
+        ) : filteredCompanies.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-gray-500 mb-3">No companies match your filters</p>
+            <button onClick={handleClearFilters} className="text-sm text-blue-600 hover:underline">
+              Clear filters
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -153,10 +435,23 @@ export default function LeadsPage() {
                     <td className="px-6 py-4 text-sm text-gray-600 font-mono">{c.mobile_number || '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={c.email}>{c.email || '—'}</td>
                     <td className="px-6 py-4 text-sm text-blue-600 max-w-xs truncate">
-                      {c.website_url
-                        ? <a href={c.website_url.startsWith('http') ? c.website_url : `https://${c.website_url}`} target="_blank" rel="noreferrer"
-                            className="hover:underline" title={c.website_url}>{c.website_url}</a>
-                        : '—'}
+                      {c.website_url ? (
+                        <a 
+                          href={c.website_url.startsWith('http') ? c.website_url : `https://${c.website_url}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="hover:underline inline-flex items-center gap-1" 
+                          title={c.website_url}
+                        >
+                          {c.website_url}
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={c.address}>{c.address || '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{c.state || '—'}</td>
@@ -213,7 +508,7 @@ export default function LeadsPage() {
         )}
 
         {/* Pagination */}
-        {!loading && companies.length > itemsPerPage && (
+        {!loading && filteredCompanies.length > itemsPerPage && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-500">
               Page {currentPage} of {totalPages}
