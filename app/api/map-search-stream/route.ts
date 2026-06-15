@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const location = searchParams.get('location');
   const category = searchParams.get('category');
+  // FIX: mode ab properly read ho raha hai aur scraper ko pass ho raha hai
+  const mode = (searchParams.get('mode') as 'fast' | 'enrich' | 'full') || 'enrich';
 
   if (!location || !category) {
     return new Response(
@@ -16,10 +18,8 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Create process in registry
   const processId = scrapingRegistry.createProcess(location, category);
 
-  // Create streaming response
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -28,15 +28,11 @@ export async function GET(req: NextRequest) {
         let totalSkipped = 0;
         let isStreamClosed = false;
 
-        // Check for stop signal
         const shouldStopCheck = () => scrapingRegistry.shouldStop(processId);
 
-        // Progress callback with database insertion
         const onProgress = async (data: any) => {
-          // Don't send if stream is already closed
           if (isStreamClosed) return;
 
-          // Check if user requested stop
           if (shouldStopCheck()) {
             controller.enqueue(
               encoder.encode(
@@ -55,7 +51,6 @@ export async function GET(req: NextRequest) {
           }
 
           try {
-            // If this is a business result, save to database
             if (data.type === 'business' && data.data) {
               const lead = data.data;
               const transformed = {
@@ -78,7 +73,6 @@ export async function GET(req: NextRequest) {
               } else {
                 const normalizedName = normalizeCompanyName(transformed.company_name);
 
-                // Duplicate Check
                 const duplicate = await pool.query(
                   `SELECT raw_id FROM lead_intelligence.raw_records
                    WHERE raw_payload->>'company_name' = $1
@@ -92,7 +86,6 @@ export async function GET(req: NextRequest) {
                   data.totalInserted = totalInserted;
                   data.totalSkipped = totalSkipped;
                 } else {
-                  // Insert into database
                   await pool.query(
                     `INSERT INTO lead_intelligence.raw_records
                      (source_record_id, source_url, raw_payload)
@@ -112,32 +105,43 @@ export async function GET(req: NextRequest) {
               }
             }
 
-            // Send progress update to client
+            // 'complete' type ab scraper se aata hai without inserted/duplicates
+            // Isliye yahaan se final stats inject karte hain
+            if (data.type === 'complete') {
+              data.totalInserted = totalInserted;
+              data.totalSkipped = totalSkipped;
+            }
+
             if (!isStreamClosed) {
               try {
-                // Safely serialize JSON by handling special characters
                 const jsonString = JSON.stringify(data);
                 const message = `data: ${jsonString}\n\n`;
                 controller.enqueue(encoder.encode(message));
               } catch (jsonError) {
                 console.error('JSON serialization error:', jsonError);
-                // Send a safe error message
-                const safeMessage = `data: ${JSON.stringify({ 
-                  type: 'error', 
-                  message: 'Data serialization failed' 
+                const safeMessage = `data: ${JSON.stringify({
+                  type: 'error',
+                  message: 'Data serialization failed'
                 })}\n\n`;
                 controller.enqueue(encoder.encode(safeMessage));
               }
             }
-          } catch (error) {
+
+            // Stream close after complete
+            if (data.type === 'complete' && !isStreamClosed) {
+              isStreamClosed = true;
+              controller.close();
+              scrapingRegistry.removeProcess(processId);
+            }
+          } catch (error: any) {
+            if (error.message === 'STOPPED_BY_USER') throw error;
             console.error('Progress callback error:', error);
-            // Continue even if one business fails
             if (data.type === 'business') {
               totalSkipped++;
               data.inserted = false;
               data.totalInserted = totalInserted;
               data.totalSkipped = totalSkipped;
-              
+
               if (!isStreamClosed) {
                 const message = `data: ${JSON.stringify(data)}\n\n`;
                 controller.enqueue(encoder.encode(message));
@@ -146,51 +150,33 @@ export async function GET(req: NextRequest) {
           }
         };
 
-        // Start scraping with callback and stop check
-        await scrapeGoogleMapsStream(location, category, onProgress, shouldStopCheck);
+        // FIX: mode ab scraper ko pass ho raha hai
+        await scrapeGoogleMapsStream(location, category, onProgress, shouldStopCheck, mode);
 
-        // Send completion signal with final stats
-        if (!isStreamClosed) {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: 'complete',
-                totalInserted,
-                totalSkipped,
-              })}\n\n`
-            )
-          );
-          isStreamClosed = true;
-          controller.close();
-          scrapingRegistry.removeProcess(processId);
-        }
       } catch (error: any) {
         console.error('Stream error:', error);
         scrapingRegistry.removeProcess(processId);
-        
-        // Don't send error if it was a user-requested stop
+
         if (error.message === 'STOPPED_BY_USER') {
           return;
         }
-        
+
         try {
-          // Safely escape error message
           const errorMessage = (error.message || 'Unknown error')
             .replace(/\\/g, '\\\\')
             .replace(/"/g, '\\"')
             .replace(/\n/g, '\\n')
             .replace(/\r/g, '\\r')
             .replace(/\t/g, '\\t');
-          
+
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ 
-              type: 'error', 
-              message: errorMessage 
+            encoder.encode(`data: ${JSON.stringify({
+              type: 'error',
+              message: errorMessage
             })}\n\n`)
           );
           controller.close();
         } catch (closeError) {
-          // Stream already closed
           console.error('Could not send error, stream closed:', closeError);
         }
       }

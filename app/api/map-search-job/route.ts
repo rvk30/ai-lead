@@ -6,7 +6,7 @@ import { createJob, updateJob, completeJob, failJob, addJobData } from '@/lib/jo
 const { scrapeGoogleMapsStream } = require('../scripts/googleMapsScraper');
 
 export async function POST(req: NextRequest) {
-  const { location, category } = await req.json();
+  const { location, category, mode = 'enrich' } = await req.json();
 
   if (!location || !category) {
     return NextResponse.json(
@@ -15,11 +15,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Create job
   const jobId = createJob(location, category);
 
-  // Start scraping in background (don't await)
-  startScraping(jobId, location, category).catch((error) => {
+  // Background mein start karo (await mat karo)
+  startScraping(jobId, location, category, mode).catch((error) => {
     console.error('Background scraping failed:', error);
     failJob(jobId, error.message);
   });
@@ -31,13 +30,12 @@ export async function POST(req: NextRequest) {
   });
 }
 
-async function startScraping(jobId: string, location: string, category: string) {
+async function startScraping(jobId: string, location: string, category: string, mode: string = 'enrich') {
   let totalInserted = 0;
   let totalSkipped = 0;
 
   const onProgress = async (data: any) => {
     try {
-      // Update job progress
       if (data.type === 'status') {
         updateJob(jobId, {
           progress: {
@@ -64,7 +62,6 @@ async function startScraping(jobId: string, location: string, category: string) 
           },
         });
       } else if (data.type === 'business' && data.data) {
-        // Save to database
         const lead = data.data;
         const transformed = {
           company_name: lead.company_name?.trim() || '',
@@ -83,7 +80,6 @@ async function startScraping(jobId: string, location: string, category: string) 
         } else {
           const normalizedName = normalizeCompanyName(transformed.company_name);
 
-          // Duplicate Check
           const duplicate = await pool.query(
             `SELECT raw_id FROM lead_intelligence.raw_records
              WHERE raw_payload->>'company_name' = $1
@@ -95,7 +91,6 @@ async function startScraping(jobId: string, location: string, category: string) 
             totalSkipped++;
           } else {
             try {
-              // Insert into database
               await pool.query(
                 `INSERT INTO lead_intelligence.raw_records
                  (source_record_id, source_url, raw_payload)
@@ -114,7 +109,6 @@ async function startScraping(jobId: string, location: string, category: string) 
           }
         }
 
-        // Add to job data and update counts
         addJobData(jobId, data.data);
         updateJob(jobId, {
           insertedCount: totalInserted,
@@ -127,10 +121,9 @@ async function startScraping(jobId: string, location: string, category: string) 
   };
 
   try {
-    // Start scraping
-    await scrapeGoogleMapsStream(location, category, onProgress);
+    // FIX: shouldStop aur mode dono pass ho rahe hain ab
+    await scrapeGoogleMapsStream(location, category, onProgress, () => false, mode);
 
-    // Complete job
     const job = require('@/lib/jobManager').getJob(jobId);
     if (job) {
       completeJob(jobId, job.data);
