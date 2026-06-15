@@ -69,9 +69,9 @@ export default function FilterPage() {
         setAllCompanies(data.data);
         
         // Extract unique values
-        const uniqueStates = [...new Set(data.data.map((c: Company) => c.state).filter(Boolean))];
-        const uniqueCategories = [...new Set(data.data.map((c: Company) => c.business_category).filter(Boolean))];
-        const uniqueSources = [...new Set(data.data.map((c: Company) => c.source_file).filter(Boolean))];
+        const uniqueStates = [...new Set(data.data.map((c: Company) => c.state).filter(Boolean))] as string[];
+        const uniqueCategories = [...new Set(data.data.map((c: Company) => c.business_category).filter(Boolean))] as string[];
+        const uniqueSources = [...new Set(data.data.map((c: Company) => c.source_file).filter(Boolean))] as string[];
         
         setStates(uniqueStates.sort());
         setCategories(uniqueCategories.sort());

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -25,7 +25,7 @@ const qualityBadge = (score: number) => {
   return 'bg-red-100 text-red-700';
 };
 
-export default function LeadsPage() {
+function LeadsPageContent() {
   const searchParams = useSearchParams();
   const [companies, setCompanies]   = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
@@ -74,9 +74,9 @@ export default function LeadsPage() {
         setFilteredCompanies(data.data);
         
         // Extract unique values
-        const uniqueStates = [...new Set(data.data.map((c: Company) => c.state).filter(Boolean))];
-        const uniqueCategories = [...new Set(data.data.map((c: Company) => c.business_category).filter(Boolean))];
-        const uniqueSources = [...new Set(data.data.map((c: Company) => c.source_file).filter(Boolean))];
+        const uniqueStates = [...new Set(data.data.map((c: Company) => c.state).filter(Boolean))] as string[];
+        const uniqueCategories = [...new Set(data.data.map((c: Company) => c.business_category).filter(Boolean))] as string[];
+        const uniqueSources = [...new Set(data.data.map((c: Company) => c.source_file).filter(Boolean))] as string[];
         
         console.log('All sources from data:', data.data.map((c: Company) => c.source_file));
         console.log('Unique sources:', uniqueSources);
@@ -566,5 +566,17 @@ export default function LeadsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LeadsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <LeadsPageContent />
+    </Suspense>
   );
 }

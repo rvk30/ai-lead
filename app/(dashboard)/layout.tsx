@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import GlobalJobNotification from '@/components/GlobalJobNotification';
 
 export default function DashboardLayout({
   children,
@@ -15,10 +16,15 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
+  const [hasSavedSearch, setHasSavedSearch] = useState(false);
 
   useEffect(() => {
     checkAuth();
     fetchSources();
+    // Check for saved search only on client
+    if (typeof window !== 'undefined') {
+      setHasSavedSearch(!!localStorage.getItem('mapsSearchState'));
+    }
   }, []);
 
   const fetchSources = async () => {
@@ -26,7 +32,7 @@ export default function DashboardLayout({
       const res = await fetch('/api/leads/all');
       const data = await res.json();
       if (data.success) {
-        const uniqueSources = [...new Set(data.data.map((c: any) => c.source_file).filter(Boolean))];
+        const uniqueSources = [...new Set(data.data.map((c: any) => c.source_file).filter(Boolean))] as string[];
         setSources(uniqueSources.sort());
       }
     } catch (err) {
@@ -85,7 +91,6 @@ export default function DashboardLayout({
             d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
-      badge: typeof window !== 'undefined' && localStorage.getItem('mapsSearchState') ? '!' : null,
     },
     {
       label: 'Create Lead',
@@ -130,7 +135,11 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+    <>
+      {/* Global Job Notification */}
+      <GlobalJobNotification />
+      
+      <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-white border-r border-gray-200 flex flex-col transition-all duration-300 flex-shrink-0`}>
         {/* Logo */}
@@ -160,6 +169,8 @@ export default function DashboardLayout({
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            const showBadge = item.href === '/maps-search' && hasSavedSearch;
+            
             return (
               <Link
                 key={item.href}
@@ -172,7 +183,7 @@ export default function DashboardLayout({
               >
                 <span className="flex-shrink-0">{item.icon}</span>
                 {sidebarOpen && <span className="text-sm">{item.label}</span>}
-                {item.badge && sidebarOpen && (
+                {showBadge && sidebarOpen && (
                   <span className="ml-auto w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 )}
               </Link>
@@ -261,5 +272,6 @@ export default function DashboardLayout({
         {children}
       </main>
     </div>
+    </>
   );
 }

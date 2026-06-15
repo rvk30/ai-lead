@@ -7,9 +7,15 @@ declare global {
 
 const pool = global.pgPool || new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 5, // Reduced from 20 to 5 (safer for shared DB)
-  idleTimeoutMillis: 10000, // Close idle clients after 10 seconds (faster cleanup)
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection cannot be established
+  max: 10, // Increased to 10 connections
+  min: 2, // Keep 2 connections always ready
+  idleTimeoutMillis: 30000, // 30 seconds
+  connectionTimeoutMillis: 15000, // 15 seconds to establish connection
+  statement_timeout: 60000, // 60 seconds for query execution
+  query_timeout: 60000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
+  options: '-c search_path=lead_intelligence,public', // Set schema search path
 });
 
 if (process.env.NODE_ENV !== 'production') {

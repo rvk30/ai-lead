@@ -10,6 +10,8 @@ interface ScrapedLead {
   address: string;
   business_category: string;
   source_file: string;
+  email?: string;
+  google_rating?: string;
 }
 
 interface SearchResult {
@@ -20,13 +22,31 @@ interface SearchResult {
   data: ScrapedLead[];
 }
 
+interface StreamProgress {
+  type: string;
+  message?: string;
+  count?: number;
+  current?: number;
+  total?: number;
+  data?: ScrapedLead;
+  inserted?: boolean;
+  totalInserted?: number;
+  totalSkipped?: number;
+}
+
 export default function MapsSearchPage() {
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState('');
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<SearchResult | null>(null);
   const [error, setError] = useState('');
-  const [searchId, setSearchId] = useState<string | null>(null);
+  const [streamMode, setStreamMode] = useState(true);
+  const [liveData, setLiveData] = useState<ScrapedLead[]>([]);
+  const [progress, setProgress] = useState({ current: 0, total: 0, message: '' });
+  const [foundCount, setFoundCount] = useState(0);
+  const [insertedCount, setInsertedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [eventSourceRef, setEventSourceRef] = useState<EventSource | null>(null);
 
   const popularLocations = ['Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Gurgaon', 'Chennai', 'Hyderabad'];
   const popularCategories = [
@@ -46,7 +66,22 @@ export default function MapsSearchPage() {
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState);
-        if (parsed.results) {
+        
+        // If search is in progress, reconnect
+        if (parsed.searching && parsed.location && parsed.category) {
+          setLocation(parsed.location);
+          setCategory(parsed.category);
+          setSearching(true);
+          setLiveData(parsed.liveData || []);
+          setFoundCount(parsed.foundCount || 0);
+          setInsertedCount(parsed.insertedCount || 0);
+          setSkippedCount(parsed.skippedCount || 0);
+          setProgress(parsed.progress || { current: 0, total: 0, message: '' });
+          
+          // Reconnect to stream
+          reconnectStream(parsed.location, parsed.category, parsed.liveData || []);
+        } else if (parsed.results) {
+          // Restore completed results
           setResults(parsed.results);
           setLocation(parsed.location || '');
           setCategory(parsed.category || '');
@@ -57,17 +92,133 @@ export default function MapsSearchPage() {
     }
   }, []);
 
-  // Save state whenever results change
+  // Cleanup on unmount - DON'T close stream
   useEffect(() => {
-    if (results) {
-      localStorage.setItem('mapsSearchState', JSON.stringify({
-        results,
+    return () => {
+      // Don't close EventSource on unmount - let it continue in background
+      // Stream will auto-close when complete
+    };
+  }, []);
+
+  // Save state whenever any relevant state changes
+  useEffect(() => {
+    if (searching || results) {
+      const stateToSave = {
+        searching,
         location,
         category,
+        liveData,
+        foundCount,
+        insertedCount,
+        skippedCount,
+        progress,
+        results,
         timestamp: Date.now(),
-      }));
+      };
+      localStorage.setItem('mapsSearchState', JSON.stringify(stateToSave));
     }
-  }, [results, location, category]);
+  }, [searching, results, location, category, liveData, foundCount, insertedCount, skippedCount, progress]);
+
+  const reconnectStream = (loc: string, cat: string, existingData: ScrapedLead[]) => {
+    let currentLiveData = [...existingData];
+
+    const eventSource = new EventSource(
+      `/api/map-search-stream?location=${encodeURIComponent(loc)}&category=${encodeURIComponent(cat)}`
+    );
+
+    setEventSourceRef(eventSource);
+
+    eventSource.onmessage = (event) => {
+      try {
+        // Validate event data before parsing
+        if (!event.data || event.data.trim() === '') {
+          console.warn('Empty event data received');
+          return;
+        }
+
+        let data: StreamProgress;
+        try {
+          data = JSON.parse(event.data);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          console.error('Raw event data:', event.data);
+          return; // Skip this event and continue
+        }
+        
+        if (data.type === 'status') {
+          setProgress(prev => ({ ...prev, message: data.message || '' }));
+        } else if (data.type === 'scroll') {
+          setProgress(prev => ({ 
+            ...prev, 
+            message: `Scrolling: ${data.current}/${data.total}` 
+          }));
+        } else if (data.type === 'found') {
+          setFoundCount(data.count || 0);
+          setProgress(prev => ({ 
+            ...prev, 
+            total: data.count || 0,
+            message: data.message || '' 
+          }));
+        } else if (data.type === 'progress') {
+          setProgress({ 
+            current: data.current || 0, 
+            total: data.total || 0,
+            message: data.message || '' 
+          });
+        } else if (data.type === 'business') {
+          if (data.data) {
+            // Check if already exists (avoid duplicates on reconnect)
+            const exists = currentLiveData.some(
+              item => item.company_name === data.data?.company_name
+            );
+            
+            if (!exists) {
+              currentLiveData = [...currentLiveData, data.data];
+              setLiveData(currentLiveData);
+            }
+            
+            setProgress(prev => ({ 
+              ...prev, 
+              current: data.count || prev.current,
+              message: `Scraped ${data.count}/${data.total} businesses` 
+            }));
+            
+            if (data.totalInserted !== undefined) {
+              setInsertedCount(data.totalInserted);
+            }
+            if (data.totalSkipped !== undefined) {
+              setSkippedCount(data.totalSkipped);
+            }
+          }
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          setSearching(false);
+          setEventSourceRef(null);
+          setResults({
+            success: true,
+            totalScraped: currentLiveData.length,
+            totalInserted: data.totalInserted || currentLiveData.length,
+            totalSkipped: data.totalSkipped || 0,
+            data: currentLiveData,
+          });
+        } else if (data.type === 'error') {
+          eventSource.close();
+          setSearching(false);
+          setEventSourceRef(null);
+          setError(data.message || 'Search failed');
+        }
+      } catch (err) {
+        console.error('Failed to parse event:', err);
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      setSearching(false);
+      setEventSourceRef(null);
+      setError('Connection lost. Please try again.');
+    };
+  };
 
   const handleSearch = async () => {
     if (!location.trim() || !category.trim()) {
@@ -78,34 +229,154 @@ export default function MapsSearchPage() {
     setSearching(true);
     setError('');
     setResults(null);
+    setLiveData([]);
+    setProgress({ current: 0, total: 0, message: '' });
+    setFoundCount(0);
+    setInsertedCount(0);
+    setSkippedCount(0);
 
-    try {
-      const res = await fetch('/api/map-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location, category }),
-      });
+    if (streamMode) {
+      // Use streaming API for real-time updates
+      try {
+        let currentLiveData: ScrapedLead[] = [];
 
-      const data = await res.json();
+        const eventSource = new EventSource(
+          `/api/map-search-stream?location=${encodeURIComponent(location)}&category=${encodeURIComponent(category)}`
+        );
 
-      if (data.success) {
-        setResults(data);
-      } else {
-        setError(data.message || 'Search failed');
+        setEventSourceRef(eventSource);
+
+        eventSource.onmessage = (event) => {
+          try {
+            // Validate event data before parsing
+            if (!event.data || event.data.trim() === '') {
+              console.warn('Empty event data received');
+              return;
+            }
+
+            let data: StreamProgress;
+            try {
+              data = JSON.parse(event.data);
+            } catch (parseError) {
+              console.error('JSON parse error:', parseError);
+              console.error('Raw event data:', event.data);
+              return; // Skip this event and continue
+            }
+            
+            if (data.type === 'status') {
+              setProgress(prev => ({ ...prev, message: data.message || '' }));
+            } else if (data.type === 'scroll') {
+              setProgress(prev => ({ 
+                ...prev, 
+                message: `Scrolling: ${data.current}/${data.total}` 
+              }));
+            } else if (data.type === 'found') {
+              setFoundCount(data.count || 0);
+              setProgress(prev => ({ 
+                ...prev, 
+                total: data.count || 0,
+                message: data.message || '' 
+              }));
+            } else if (data.type === 'progress') {
+              setProgress({ 
+                current: data.current || 0, 
+                total: data.total || 0,
+                message: data.message || '' 
+              });
+            } else if (data.type === 'business') {
+              // Add business to live data immediately
+              if (data.data) {
+                currentLiveData = [...currentLiveData, data.data];
+                setLiveData(currentLiveData);
+                setProgress(prev => ({ 
+                  ...prev, 
+                  current: data.count || prev.current,
+                  message: `Scraped ${data.count}/${data.total} businesses` 
+                }));
+                
+                // Update inserted/skipped counts
+                if (data.totalInserted !== undefined) {
+                  setInsertedCount(data.totalInserted);
+                }
+                if (data.totalSkipped !== undefined) {
+                  setSkippedCount(data.totalSkipped);
+                }
+              }
+            } else if (data.type === 'complete') {
+              eventSource.close();
+              setSearching(false);
+              setEventSourceRef(null);
+              setResults({
+                success: true,
+                totalScraped: currentLiveData.length,
+                totalInserted: data.totalInserted || currentLiveData.length,
+                totalSkipped: data.totalSkipped || 0,
+                data: currentLiveData,
+              });
+            } else if (data.type === 'error') {
+              eventSource.close();
+              setSearching(false);
+              setEventSourceRef(null);
+              setError(data.message || 'Search failed');
+            }
+          } catch (err) {
+            console.error('Failed to parse event:', err);
+          }
+        };
+
+        eventSource.onerror = () => {
+          eventSource.close();
+          setSearching(false);
+          setEventSourceRef(null);
+          setError('Connection lost. Please try again.');
+        };
+      } catch (err: any) {
+        console.error(err);
+        setError('Failed to start search');
+        setSearching(false);
       }
-    } catch (err: any) {
-      console.error(err);
-      setError('Failed to connect to server');
-    } finally {
-      setSearching(false);
+    } else {
+      // Use regular API (wait for all results)
+      try {
+        const res = await fetch('/api/map-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location, category }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          setResults(data);
+        } else {
+          setError(data.message || 'Search failed');
+        }
+      } catch (err: any) {
+        console.error(err);
+        setError('Failed to connect to server');
+      } finally {
+        setSearching(false);
+      }
     }
   };
 
   const handleReset = () => {
+    // Close any active stream
+    if (eventSourceRef) {
+      eventSourceRef.close();
+      setEventSourceRef(null);
+    }
+    
     setLocation('');
     setCategory('');
     setResults(null);
     setError('');
+    setLiveData([]);
+    setProgress({ current: 0, total: 0, message: '' });
+    setFoundCount(0);
+    setInsertedCount(0);
+    setSkippedCount(0);
+    setSearching(false);
     localStorage.removeItem('mapsSearchState');
   };
 
@@ -146,6 +417,23 @@ export default function MapsSearchPage() {
             >
               Clear and start new search
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Search In Progress Notification */}
+      {searching && liveData.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 animate-pulse">
+            <div className="w-2 h-2 bg-white rounded-full"></div>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-green-800">
+              <strong>Search in progress:</strong> Data is being saved in the background. You can navigate to other pages - the search will continue!
+            </p>
+            <p className="text-xs text-green-600 mt-1">
+              Progress: {liveData.length}/{foundCount} businesses scraped
+            </p>
           </div>
         </div>
       )}
@@ -255,17 +543,165 @@ export default function MapsSearchPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold text-gray-900">Searching Google Maps...</h3>
-              <p className="text-sm text-gray-500">This may take 30-60 seconds</p>
+              <p className="text-sm text-gray-500">{progress.message || 'Initializing...'}</p>
+            </div>
+            {progress.total > 0 && (
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-600">
+                  {liveData.length}/{foundCount}
+                </div>
+                <div className="text-xs text-gray-500">Scraped</div>
+              </div>
+            )}
+          </div>
+          
+          {/* Progress Bar */}
+          {progress.total > 0 && (
+            <div className="mb-4">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Progress</span>
+                <span>{Math.round((liveData.length / foundCount) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${(liveData.length / foundCount) * 100}%` }}
+                ></div>
+              </div>
+              
+              {/* Live Stats */}
+              {(insertedCount > 0 || skippedCount > 0) && (
+                <div className="flex gap-4 mt-3 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-600 font-semibold">✅ {insertedCount}</span>
+                    <span className="text-gray-500">Inserted</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-yellow-600 font-semibold">⏭️ {skippedCount}</span>
+                    <span className="text-gray-500">Skipped</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2 text-sm text-gray-600">
+            <p className={progress.message.includes('Opening') ? 'text-blue-600 font-medium' : ''}>
+              {progress.message.includes('Opening') ? '🔄' : '✓'} Opening Google Maps...
+            </p>
+            <p className={progress.message.includes('Scrolling') ? 'text-blue-600 font-medium' : foundCount > 0 ? '' : ''}>
+              {progress.message.includes('Scrolling') ? '🔄' : foundCount > 0 ? '✓' : '⏳'} 
+              {progress.message.includes('Scrolling') ? ` ${progress.message}` : ' Searching for businesses...'}
+            </p>
+            {foundCount > 0 && (
+              <p className="text-green-600 font-medium">
+                ✓ Found {foundCount} businesses
+              </p>
+            )}
+            {liveData.length > 0 && (
+              <p className="text-blue-600 font-medium">
+                🔄 Extracting details: {liveData.length}/{foundCount} complete
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Live Data Table - Shows while scraping */}
+      {searching && liveData.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">📋 Live Results ({liveData.length})</h3>
+                <p className="text-sm text-gray-500 mt-1">Updating in real-time as businesses are scraped</p>
+              </div>
+              <div className="flex items-center gap-2 text-blue-600">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">Live</span>
+              </div>
             </div>
           </div>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>⏳ Opening Google Maps...</p>
-            <p>⏳ Searching for businesses...</p>
-            <p>⏳ Extracting contact details...</p>
-            <p>⏳ Checking for duplicates...</p>
-            <p>⏳ Saving to database...</p>
+          
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Company Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Website
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Rating
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Address
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {liveData.map((lead, index) => (
+                  <tr key={index} className="hover:bg-gray-50 transition animate-fadeIn">
+                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-blue-600 font-semibold text-xs">
+                            {(lead.company_name || '?').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {lead.company_name || '—'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 font-mono">
+                      {lead.mobile_number || '—'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={lead.email}>
+                      {lead.email || '—'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-blue-600 max-w-xs truncate">
+                      {lead.website_url ? (
+                        <span className="inline-flex items-center gap-1" title={lead.website_url}>
+                          {lead.website_url.substring(0, 30)}...
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {lead.google_rating ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-500">⭐</span>
+                          <span className="font-medium">{lead.google_rating}</span>
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={lead.address}>
+                      {lead.address || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -330,7 +766,13 @@ export default function MapsSearchPage() {
                     Phone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Website
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Rating
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Address
@@ -361,6 +803,9 @@ export default function MapsSearchPage() {
                     <td className="px-6 py-4 text-sm text-gray-600 font-mono">
                       {lead.mobile_number || '—'}
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={lead.email}>
+                      {lead.email || '—'}
+                    </td>
                     <td className="px-6 py-4 text-sm text-blue-600 max-w-xs truncate">
                       {lead.website_url ? (
                         <a
@@ -388,6 +833,16 @@ export default function MapsSearchPage() {
                               d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
                         </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {lead.google_rating ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-500">⭐</span>
+                          <span className="font-medium">{lead.google_rating}</span>
+                        </div>
                       ) : (
                         '—'
                       )}
